@@ -112,8 +112,8 @@ This roadmap sequences work by dependency, not by date — each phase produces s
 
 | Phase | Focus |
 |-------|-------|
-| **Day 1 — Foundation** *(current)* | Repository structure, governance docs, licensing, contribution guidelines. |
-| **Phase 2 — IaC Scanning** | Terraform project scaffold + Checkov integration. |
+| **Day 1 — Foundation** *(complete)* | Repository structure, governance docs, licensing, contribution guidelines. |
+| **Phase 2 — IaC Scanning** *(current)* | Terraform project scaffold + Checkov integration. |
 | **Phase 3 — Container Scanning** | Dockerized scan targets + Trivy integration. |
 | **Phase 4 — Secret Detection** | GitLeaks integration across source and history. |
 | **Phase 5 — Report Processing** | AWS Lambda functions to normalize and process scan output. |
@@ -122,13 +122,28 @@ This roadmap sequences work by dependency, not by date — each phase produces s
 | **Phase 8 — Dashboard** | React compliance reporting UI. |
 | **Phase 9 — CI/CD Automation** | End-to-end GitHub Actions pipeline tying all phases together. |
 
+## Phase 2 – Infrastructure as Code Scanning
+
+The first functional milestone: a real Terraform project and an automated Checkov gate that runs on every push and pull request.
+
+- **`infra/terraform/`** — a minimal Terraform root module (`versions.tf`, `providers.tf`, `variables.tf`, `main.tf`, `outputs.tf`) configuring the AWS provider with pinned version constraints and default resource tagging.
+- **One intentionally insecure resource** — a demo S3 bucket in `main.tf` deliberately configured with public access enabled (public access block disabled, public-read ACL). It exists solely as a scan target, clearly commented as intentional, so the pipeline has a real, known finding to catch.
+- **`.github/workflows/checkov.yml`** — a GitHub Actions workflow that triggers on `push` and `pull_request`, installs Checkov, scans `infra/terraform`, and fails the build when security issues are found — proving the IaC security gate works end to end.
+
+This phase intentionally excludes Docker, Trivy, GitLeaks, Lambda, DynamoDB, and dashboard code — those arrive in later phases per the roadmap above.
+
 ## Repository Structure
 
 ```
 SkyShield/
+├── .github/
+│   └── workflows/
+│       └── checkov.yml        # Checkov IaC security scan (push / PR)
 ├── docs/
 │   ├── architecture/          # Architecture diagrams and design records
 │   └── screenshots/           # Dashboard and tooling screenshots
+├── infra/
+│   └── terraform/             # Terraform root module + Checkov scan target
 ├── README.md
 ├── LICENSE
 ├── CONTRIBUTING.md
@@ -138,7 +153,7 @@ SkyShield/
 └── .gitignore
 ```
 
-Additional top-level directories and files (`infra/`, `services/`, `dashboard/`, `.github/workflows/`, issue templates, etc.) will be introduced in later phases, as their corresponding code is added — not created empty in advance.
+Additional top-level directories (`services/`, `dashboard/`, issue templates, etc.) will be introduced in later phases, as their corresponding code is added — not created empty in advance.
 
 ## Future Scope
 

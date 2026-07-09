@@ -1,0 +1,25 @@
+name: Checkov IaC Security Scan
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checkov:
+    name: Checkov - Terraform Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov against Terraform
+        run: checkov -d infra/terraform --compact --quiet --framework terraform
