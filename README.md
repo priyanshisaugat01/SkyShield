@@ -114,8 +114,8 @@ This roadmap sequences work by dependency, not by date — each phase produces s
 |-------|-------|
 | **Day 1 — Foundation** *(complete)* | Repository structure, governance docs, licensing, contribution guidelines. |
 | **Phase 2 — IaC Scanning** *(complete)* | Terraform project scaffold + Checkov integration. |
-| **Phase 3 — Secure Infrastructure** *(current)* | Remediate the Phase 2 Checkov findings using AWS S3 security best practices. |
-| **Phase 4 — Container Scanning** | Dockerized scan targets + Trivy integration. |
+| **Phase 3 — Secure Infrastructure** *(complete)* | Remediate the Phase 2 Checkov findings using AWS S3 security best practices. |
+| **Phase 4 — Container Scanning** *(current)* | Dockerized scan targets + Trivy integration. |
 | **Phase 5 — Secret Detection** | GitLeaks integration across source and history. |
 | **Phase 6 — Report Processing** | AWS Lambda functions to normalize and process scan output. |
 | **Phase 7 — Storage & Observability** | DynamoDB persistence, CloudWatch metrics. |
@@ -174,18 +174,39 @@ Scanned with Checkov 3.3.8 against `infra/terraform`.
 | `CKV2_AWS_61` | No lifecycle configuration |
 | `CKV2_AWS_62` | No event notifications configured |
 
+## Phase 4 – Container Security
+
+Extends the compliance pipeline to container images: a minimal demo service is built into a hardened Docker image, and every push triggers an automated Trivy vulnerability scan alongside the existing Checkov scan.
+
+- **`services/demo-app/`** — a minimal Node.js/Express service (`server.js`, `package.json`, `package-lock.json`) with `/` and `/health` endpoints. It exists purely as a realistic build/scan target for the container pipeline.
+- **`services/demo-app/Dockerfile`** — a multi-stage, production-style build: a `deps` stage runs `npm ci --omit=dev`, and the `runtime` stage copies only the built `node_modules` and app code onto `node:20-alpine`, strips the bundled `npm`/`npx`/`corepack` tooling (unneeded at runtime and a source of extra CVEs), runs as the image's non-root `node` user, and defines a `HEALTHCHECK` against `/health`.
+- **`services/demo-app/.dockerignore`** — excludes `node_modules`, VCS metadata, env files, and docs from the build context.
+- **`.github/workflows/trivy.yml`** — a new, separate GitHub Actions workflow (the existing `checkov.yml` is untouched) that triggers on every `push`, builds the demo app image, and scans it with Trivy. It fails the job only on `HIGH`/`CRITICAL` findings (`severity: HIGH,CRITICAL`, `exit-code: 1`) — `LOW`/`MEDIUM` findings are reported but non-blocking.
+
+This phase intentionally excludes GitLeaks, Lambda, DynamoDB, CloudWatch, and Kubernetes — those remain for later phases per the roadmap above.
+
+### Trivy scan result (local verification)
+
+Built and scanned locally with Docker 29.2.1 and Trivy (`aquasec/trivy:latest`) before pushing, using the same `--severity HIGH,CRITICAL` gate the CI workflow enforces:
+
+- Stripping `npm`/`npx`/`corepack` from the runtime image eliminated 12 `HIGH` findings that were coming from npm's own bundled transitive dependencies (`cross-spawn`, `glob`, `minimatch`, `node-tar`, etc.) — none of which the application actually uses at runtime.
+- **2 `HIGH` findings remain**: `CVE-2026-45447` in the base image's `libssl3`/`libcrypto3` (OpenSSL heap use-after-free in `PKCS7_verify()`). A fixed package version (`3.5.7-r0`) exists upstream, but the current `node:20-alpine` base image tag hasn't been rebuilt with it yet — this is a real, current CVE in the base OS layer, not something introduced by this project's code. Expect the first CI run of this workflow to fail on this exact finding until Alpine/Docker Hub publish an updated `node:20-alpine` layer; re-running the workflow later (or a routine base-image bump) will pick up the fix automatically.
+
 ## Repository Structure
 
 ```
 SkyShield/
 ├── .github/
 │   └── workflows/
-│       └── checkov.yml        # Checkov IaC security scan (push / PR)
+│       ├── checkov.yml        # Checkov IaC security scan (push / PR)
+│       └── trivy.yml          # Trivy container vulnerability scan (push)
 ├── docs/
 │   ├── architecture/          # Architecture diagrams and design records
 │   └── screenshots/           # Dashboard and tooling screenshots
 ├── infra/
 │   └── terraform/             # Terraform root module + Checkov scan target
+├── services/
+│   └── demo-app/              # Minimal Node.js service + Dockerfile (Trivy scan target)
 ├── README.md
 ├── LICENSE
 ├── CONTRIBUTING.md
@@ -195,7 +216,7 @@ SkyShield/
 └── .gitignore
 ```
 
-Additional top-level directories (`services/`, `dashboard/`, issue templates, etc.) will be introduced in later phases, as their corresponding code is added — not created empty in advance.
+Additional top-level directories (`dashboard/`, issue templates, etc.) will be introduced in later phases, as their corresponding code is added — not created empty in advance.
 
 ## Future Scope
 

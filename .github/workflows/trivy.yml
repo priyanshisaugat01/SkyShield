@@ -1,0 +1,33 @@
+name: Trivy Container Vulnerability Scan
+
+on:
+  push:
+
+jobs:
+  trivy:
+    name: Trivy - Container Image Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the repository so the Docker build context (services/demo-app)
+      # is available to the runner.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Build the Phase 4 demo service image locally on the runner so Trivy
+      # has a concrete artifact to scan. Tagging with the commit SHA keeps
+      # the scanned image traceable back to the exact code that produced it.
+      - name: Build demo app Docker image
+        run: docker build -t skyshield-demo-app:${{ github.sha }} ./services/demo-app
+
+      # Scan the freshly-built image for known OS and application-dependency
+      # vulnerabilities. severity is restricted to HIGH/CRITICAL and
+      # exit-code 1 fails the job when any are found, per Phase 4's
+      # requirement to gate only on the most severe findings — LOW/MEDIUM
+      # issues are not blocking.
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: skyshield-demo-app:${{ github.sha }}
+          severity: HIGH,CRITICAL
+          exit-code: "1"
