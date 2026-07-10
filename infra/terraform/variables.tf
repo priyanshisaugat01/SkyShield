@@ -16,8 +16,8 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "insecure_bucket_name" {
-  description = "Globally unique name for the intentionally insecure demo S3 bucket used as a Checkov scan target."
+variable "demo_bucket_name" {
+  description = "Globally unique name for the demo S3 bucket used as a Checkov scan target."
   type        = string
-  default     = "skyshield-insecure-demo-bucket"
+  default     = "skyshield-compliance-demo-bucket"
 }

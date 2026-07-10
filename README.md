@@ -113,14 +113,15 @@ This roadmap sequences work by dependency, not by date — each phase produces s
 | Phase | Focus |
 |-------|-------|
 | **Day 1 — Foundation** *(complete)* | Repository structure, governance docs, licensing, contribution guidelines. |
-| **Phase 2 — IaC Scanning** *(current)* | Terraform project scaffold + Checkov integration. |
-| **Phase 3 — Container Scanning** | Dockerized scan targets + Trivy integration. |
-| **Phase 4 — Secret Detection** | GitLeaks integration across source and history. |
-| **Phase 5 — Report Processing** | AWS Lambda functions to normalize and process scan output. |
-| **Phase 6 — Storage & Observability** | DynamoDB persistence, CloudWatch metrics. |
-| **Phase 7 — Alerting** | SNS-based notification on compliance violations. |
-| **Phase 8 — Dashboard** | React compliance reporting UI. |
-| **Phase 9 — CI/CD Automation** | End-to-end GitHub Actions pipeline tying all phases together. |
+| **Phase 2 — IaC Scanning** *(complete)* | Terraform project scaffold + Checkov integration. |
+| **Phase 3 — Secure Infrastructure** *(current)* | Remediate the Phase 2 Checkov findings using AWS S3 security best practices. |
+| **Phase 4 — Container Scanning** | Dockerized scan targets + Trivy integration. |
+| **Phase 5 — Secret Detection** | GitLeaks integration across source and history. |
+| **Phase 6 — Report Processing** | AWS Lambda functions to normalize and process scan output. |
+| **Phase 7 — Storage & Observability** | DynamoDB persistence, CloudWatch metrics. |
+| **Phase 8 — Alerting** | SNS-based notification on compliance violations. |
+| **Phase 9 — Dashboard** | React compliance reporting UI. |
+| **Phase 10 — CI/CD Automation** | End-to-end GitHub Actions pipeline tying all phases together. |
 
 ## Phase 2 – Infrastructure as Code Scanning
 
@@ -131,6 +132,47 @@ The first functional milestone: a real Terraform project and an automated Checko
 - **`.github/workflows/checkov.yml`** — a GitHub Actions workflow that triggers on `push` and `pull_request`, installs Checkov, scans `infra/terraform`, and fails the build when security issues are found — proving the IaC security gate works end to end.
 
 This phase intentionally excludes Docker, Trivy, GitLeaks, Lambda, DynamoDB, and dashboard code — those arrive in later phases per the roadmap above.
+
+## Phase 3 – Secure Infrastructure
+
+Remediates the Phase 2 demo S3 bucket using AWS security best practices, turning it from a deliberately-failing scan target into a reference example of a compliant bucket. Only `infra/terraform/main.tf`, `variables.tf`, and `outputs.tf` were changed — no other project files.
+
+- **Private by default, ACLs disabled** — `aws_s3_bucket_ownership_controls` now sets `object_ownership = "BucketOwnerEnforced"`, which disables ACLs entirely so access is governed only by IAM/bucket policy.
+- **Block Public Access fully enabled** — all four `aws_s3_bucket_public_access_block` settings (`block_public_acls`, `block_public_policy`, `ignore_public_acls`, `restrict_public_buckets`) are now `true`.
+- **Server-side encryption enforced** — `aws_s3_bucket_server_side_encryption_configuration` applies AES256 encryption to every object by default.
+- **Versioning enabled** — `aws_s3_bucket_versioning` is set to `Enabled`, protecting against accidental overwrite or deletion.
+
+### Checkov findings: before vs. after
+
+Scanned with Checkov 3.3.8 against `infra/terraform`.
+
+| | Before (Phase 2) | After (Phase 3) |
+|---|---|---|
+| Passed | 6 | 12 |
+| Failed | 13 | 5 |
+
+**Fixed (8):**
+
+| Check | Description |
+|---|---|
+| `CKV_AWS_20` | S3 bucket ACL allowed public read access |
+| `CKV_AWS_53` | Block public ACLs not enabled |
+| `CKV_AWS_54` | Block public policy not enabled |
+| `CKV_AWS_55` | Ignore public ACLs not enabled |
+| `CKV_AWS_56` | Restrict public buckets not enabled |
+| `CKV_AWS_21` | Versioning not enabled |
+| `CKV2_AWS_6` | No public access block attached to the bucket |
+| `CKV2_AWS_65` | ACLs not disabled for the bucket |
+
+**Remaining (5)** — out of scope for this milestone (logging, lifecycle, replication, and KMS are not in Phase 3's requirements):
+
+| Check | Description |
+|---|---|
+| `CKV_AWS_18` | Access logging not enabled |
+| `CKV_AWS_144` | Cross-region replication not enabled |
+| `CKV_AWS_145` | Bucket not encrypted with KMS (this bucket uses AES256 by design; see comment in `main.tf`) |
+| `CKV2_AWS_61` | No lifecycle configuration |
+| `CKV2_AWS_62` | No event notifications configured |
 
 ## Repository Structure
 
