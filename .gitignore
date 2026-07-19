@@ -44,6 +44,15 @@ crash.*.log
 terraform.rc
 .terraform.lock.hcl
 
+# Terraform plan files
+*.tfplan
+
+# Ignore local override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
 # ---- Docker ----
 *.pid
 docker-compose.override.yml
