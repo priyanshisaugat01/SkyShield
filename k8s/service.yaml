@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: skyshield-service
+  namespace: skyshield
+
+spec:
+  selector:
+    app: skyshield-demo
+
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+
+  type: LoadBalancer
