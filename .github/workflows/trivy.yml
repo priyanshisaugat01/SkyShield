@@ -10,7 +10,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@master 
 
       - name: Build SkyShield website Docker image
         run: docker build -t skyshield-website:${{ github.sha }} ./website
