@@ -1,235 +1,296 @@
-# SkyShield
+# 🛡️ SkyShield
 
-**Cloud-native DevSecOps compliance automation for aviation infrastructure.**
+> Cloud-native DevSecOps compliance automation platform for aviation infrastructure.
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-foundation-lightgrey.svg)]()
+![License](https://img.shields.io/badge/License-Apache%202.0-blue)
+![AWS](https://img.shields.io/badge/AWS-EKS-orange)
+![Docker](https://img.shields.io/badge/Docker-Containerized-blue)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-Deployed-blue)
+![GitHub Actions](https://img.shields.io/badge/CI-GitHub%20Actions-success)
+![Terraform](https://img.shields.io/badge/IaC-Terraform-purple)
 
 ---
 
-## Project Overview
+# 📖 Project Overview
 
-SkyShield is a DevSecOps compliance automation platform purpose-built for aviation infrastructure. It automates security and compliance validation of cloud infrastructure and container artifacts *before* deployment, replacing manual, error-prone review with continuous, auditable, automated scanning.
+SkyShield is an enterprise-inspired DevSecOps platform built for aviation cloud infrastructure. It demonstrates how modern cloud applications can be secured, containerized, continuously validated, and deployed using AWS cloud services and Kubernetes.
 
-Aviation infrastructure operates under strict regulatory and safety requirements. SkyShield brings modern DevSecOps practices — infrastructure-as-code scanning, container vulnerability detection, secret detection, and automated compliance reporting — into that environment as a first-class part of the deployment pipeline, not an afterthought.
+The project integrates Infrastructure as Code (Terraform), container security scanning, secret detection, CI/CD automation, Docker, Amazon ECR, and Amazon EKS into one complete cloud-native deployment pipeline.
 
-## Vision
+Unlike a traditional web application, SkyShield focuses on the **entire DevSecOps lifecycle**, from infrastructure provisioning to production deployment.
 
-To make security and compliance validation an invisible, automatic, non-negotiable gate in every deployment pipeline for aviation and other high-assurance infrastructure — so that non-compliant or vulnerable infrastructure simply cannot reach production.
+---
 
-## Problem Statement
+# 🎯 Vision
 
-Aviation and other critical infrastructure operators face a combination of challenges that make manual security review insufficient:
+To make infrastructure security an automated, non-negotiable stage of every deployment pipeline by integrating security validation directly into CI/CD before applications reach production.
 
-- Infrastructure-as-code (Terraform) is frequently deployed with misconfigurations that violate security best practices and regulatory requirements.
-- Container images can carry known vulnerabilities that go undetected until after deployment.
-- Secrets (API keys, credentials, tokens) are routinely committed to source control by accident.
-- Compliance reporting is manual, inconsistent, and difficult to audit after the fact.
-- There is no unified, real-time view of the compliance posture of infrastructure across an organization.
+---
 
-SkyShield addresses these gaps by automating detection and reporting at each stage of the deployment lifecycle.
+# 🚀 Live Deployment
 
-## Goals
+SkyShield has been successfully deployed to **Amazon Elastic Kubernetes Service (Amazon EKS)**.
 
-- Prevent non-compliant or insecure infrastructure from reaching production.
-- Provide a single, auditable source of truth for compliance status.
-- Integrate security scanning directly into existing CI/CD workflows with minimal friction.
-- Surface actionable, prioritized findings rather than raw scanner noise.
-- Build a platform that scales from a single project to organization-wide adoption.
+### Deployment Stack
 
-## Planned Features
+- GitHub
+- GitHub Actions
+- Terraform
+- Docker
+- Amazon ECR
+- Amazon EKS
+- Kubernetes
+- AWS Elastic Load Balancer
+- Checkov
+- Trivy
+- GitLeaks
 
-- **Infrastructure-as-Code scanning** — Terraform static analysis using Checkov.
-- **Container image scanning** — vulnerability detection using Trivy.
-- **Secret detection** — exposed credentials and tokens detected using GitLeaks.
-- **Automated report processing** — scan output normalized and processed via AWS Lambda.
-- **Persistent compliance history** — scan results stored in DynamoDB.
-- **Operational metrics** — key indicators published to CloudWatch.
-- **Alerting** — non-compliant findings trigger notifications via SNS.
-- **Compliance dashboard** — a React-based UI for visualizing compliance posture and trends.
-- **CI/CD automation** — the entire pipeline orchestrated through GitHub Actions.
+---
 
-## High-Level Architecture
+# 🌍 Live Application
 
-> The architecture below describes the intended end-state. It is a planning reference for future development phases — no infrastructure, application, or pipeline code exists yet.
+The application is deployed on Amazon EKS and exposed through an AWS Elastic Load Balancer.
 
+## Homepage
+
+![Homepage](screenshots/homepage-eks.png)
+
+---
+
+# ⚙️ CI/CD Pipeline
+
+SkyShield uses GitHub Actions to automate security validation and container deployment.
+
+### Pipeline Stages
+
+- Infrastructure Security Scan (Checkov)
+- Secret Detection (GitLeaks)
+- Container Vulnerability Scan (Trivy)
+- Docker Image Build
+- Push Docker Image to Amazon ECR
+- Kubernetes Deployment on Amazon EKS
+
+## GitHub Actions
+
+![GitHub Actions](screenshots/github-actions.png)
+
+---
+
+# ☸️ Amazon EKS Deployment
+
+The application is deployed as Kubernetes Pods inside an Amazon EKS cluster.
+
+## Amazon EKS Cluster
+
+![Amazon EKS](screenshots/eks-cluster.png)
+
+---
+
+# 🏗️ Architecture
+
+```text
+                 Developer
+                     │
+                 git push
+                     │
+                     ▼
+              GitHub Repository
+                     │
+                     ▼
+             GitHub Actions CI
+                     │
+     ┌───────────────┼────────────────┐
+     │               │                │
+     ▼               ▼                ▼
+ Checkov         GitLeaks          Trivy
+     │               │                │
+     └───────────────┼────────────────┘
+                     │
+                     ▼
+              Docker Build
+                     │
+                     ▼
+              Amazon ECR
+                     │
+                     ▼
+              Amazon EKS
+                     │
+             Kubernetes Deployment
+                     │
+               ReplicaSet
+                     │
+                 Running Pods
+                     │
+            Kubernetes Service
+                     │
+                     ▼
+        AWS Elastic Load Balancer
+                     │
+                     ▼
+                 End Users
 ```
- ┌────────────────────┐
- │  Source Repository  │
- │  (Terraform, Code,  │
- │   Docker images)    │
- └──────────┬──────────┘
-            │
-            ▼
- ┌────────────────────────────────────────────┐
- │            GitHub Actions Pipeline           │
- │  ┌───────────┐ ┌────────┐ ┌──────────────┐  │
- │  │  Checkov  │ │ Trivy  │ │   GitLeaks   │  │
- │  │ (Terraform│ │ (Image │ │   (Secret    │  │
- │  │  scan)    │ │ scan)  │ │  detection)  │  │
- │  └─────┬─────┘ └───┬────┘ └──────┬───────┘  │
- └────────┼───────────┼─────────────┼──────────┘
-          └───────────┴─────────────┘
-                       │  scan reports
-                       ▼
-              ┌──────────────────┐
-              │   AWS Lambda      │
-              │ (report processor)│
-              └────────┬──────────┘
-                        │
-         ┌──────────────┼──────────────┐
-         ▼              ▼              ▼
-  ┌────────────┐ ┌─────────────┐ ┌──────────┐
-  │  DynamoDB   │ │ CloudWatch  │ │   SNS     │
-  │  (results)  │ │  (metrics)  │ │ (alerts)  │
-  └──────┬──────┘ └─────────────┘ └──────────┘
-         │
-         ▼
- ┌───────────────────────┐
- │   React Dashboard      │
- │ (compliance reporting) │
- └───────────────────────┘
-```
 
-## Technology Stack
+---
 
-| Layer                  | Technology              |
-|------------------------|--------------------------|
-| IaC Scanning           | Checkov                 |
-| Container Scanning     | Trivy                   |
-| Secret Detection       | GitLeaks                |
-| Compute (report logic) | AWS Lambda              |
-| Data Storage           | AWS DynamoDB             |
-| Observability          | AWS CloudWatch          |
-| Alerting               | AWS SNS                 |
-| Frontend Dashboard     | React                   |
-| CI/CD Orchestration    | GitHub Actions          |
-| Infrastructure as Code | Terraform               |
+# 🔄 DevSecOps Workflow
 
-## Development Roadmap
+1. Developer pushes code to GitHub.
+2. GitHub Actions automatically starts.
+3. Terraform files are scanned using Checkov.
+4. GitLeaks scans the repository for exposed secrets.
+5. Trivy scans the Docker image for vulnerabilities.
+6. Docker image is built.
+7. Docker image is pushed to Amazon Elastic Container Registry.
+8. Kubernetes pulls the latest image from Amazon ECR.
+9. Amazon EKS deploys the application.
+10. AWS Load Balancer exposes the application to the Internet.
 
-This roadmap sequences work by dependency, not by date — each phase produces something independently useful.
+---
 
-| Phase | Focus |
-|-------|-------|
-| **Day 1 — Foundation** *(complete)* | Repository structure, governance docs, licensing, contribution guidelines. |
-| **Phase 2 — IaC Scanning** *(complete)* | Terraform project scaffold + Checkov integration. |
-| **Phase 3 — Secure Infrastructure** *(complete)* | Remediate the Phase 2 Checkov findings using AWS S3 security best practices. |
-| **Phase 4 — Container Scanning** *(current)* | Dockerized scan targets + Trivy integration. |
-| **Phase 5 — Secret Detection** | GitLeaks integration across source and history. |
-| **Phase 6 — Report Processing** | AWS Lambda functions to normalize and process scan output. |
-| **Phase 7 — Storage & Observability** | DynamoDB persistence, CloudWatch metrics. |
-| **Phase 8 — Alerting** | SNS-based notification on compliance violations. |
-| **Phase 9 — Dashboard** | React compliance reporting UI. |
-| **Phase 10 — CI/CD Automation** | End-to-end GitHub Actions pipeline tying all phases together. |
+# 🛠️ Tech Stack
 
-## Phase 2 – Infrastructure as Code Scanning
+## Cloud
 
-The first functional milestone: a real Terraform project and an automated Checkov gate that runs on every push and pull request.
+- Amazon Web Services (AWS)
+- IAM
+- VPC
+- EC2
+- S3
+- Amazon ECR
+- Amazon EKS
+- Elastic Load Balancer
+- CloudWatch
 
-- **`infra/terraform/`** — a minimal Terraform root module (`versions.tf`, `providers.tf`, `variables.tf`, `main.tf`, `outputs.tf`) configuring the AWS provider with pinned version constraints and default resource tagging.
-- **One intentionally insecure resource** — a demo S3 bucket in `main.tf` deliberately configured with public access enabled (public access block disabled, public-read ACL). It exists solely as a scan target, clearly commented as intentional, so the pipeline has a real, known finding to catch.
-- **`.github/workflows/checkov.yml`** — a GitHub Actions workflow that triggers on `push` and `pull_request`, installs Checkov, scans `infra/terraform`, and fails the build when security issues are found — proving the IaC security gate works end to end.
+## Infrastructure as Code
 
-This phase intentionally excludes Docker, Trivy, GitLeaks, Lambda, DynamoDB, and dashboard code — those arrive in later phases per the roadmap above.
+- Terraform
 
-## Phase 3 – Secure Infrastructure
+## Containers
 
-Remediates the Phase 2 demo S3 bucket using AWS security best practices, turning it from a deliberately-failing scan target into a reference example of a compliant bucket. Only `infra/terraform/main.tf`, `variables.tf`, and `outputs.tf` were changed — no other project files.
+- Docker
+- Docker Hub
 
-- **Private by default, ACLs disabled** — `aws_s3_bucket_ownership_controls` now sets `object_ownership = "BucketOwnerEnforced"`, which disables ACLs entirely so access is governed only by IAM/bucket policy.
-- **Block Public Access fully enabled** — all four `aws_s3_bucket_public_access_block` settings (`block_public_acls`, `block_public_policy`, `ignore_public_acls`, `restrict_public_buckets`) are now `true`.
-- **Server-side encryption enforced** — `aws_s3_bucket_server_side_encryption_configuration` applies AES256 encryption to every object by default.
-- **Versioning enabled** — `aws_s3_bucket_versioning` is set to `Enabled`, protecting against accidental overwrite or deletion.
+## Orchestration
 
-### Checkov findings: before vs. after
+- Kubernetes
+- Amazon EKS
 
-Scanned with Checkov 3.3.8 against `infra/terraform`.
+## CI/CD
 
-| | Before (Phase 2) | After (Phase 3) |
-|---|---|---|
-| Passed | 6 | 12 |
-| Failed | 13 | 5 |
+- GitHub Actions
 
-**Fixed (8):**
+## Security
 
-| Check | Description |
-|---|---|
-| `CKV_AWS_20` | S3 bucket ACL allowed public read access |
-| `CKV_AWS_53` | Block public ACLs not enabled |
-| `CKV_AWS_54` | Block public policy not enabled |
-| `CKV_AWS_55` | Ignore public ACLs not enabled |
-| `CKV_AWS_56` | Restrict public buckets not enabled |
-| `CKV_AWS_21` | Versioning not enabled |
-| `CKV2_AWS_6` | No public access block attached to the bucket |
-| `CKV2_AWS_65` | ACLs not disabled for the bucket |
+- Checkov
+- Trivy
+- GitLeaks
 
-**Remaining (5)** — out of scope for this milestone (logging, lifecycle, replication, and KMS are not in Phase 3's requirements):
+## Frontend
 
-| Check | Description |
-|---|---|
-| `CKV_AWS_18` | Access logging not enabled |
-| `CKV_AWS_144` | Cross-region replication not enabled |
-| `CKV_AWS_145` | Bucket not encrypted with KMS (this bucket uses AES256 by design; see comment in `main.tf`) |
-| `CKV2_AWS_61` | No lifecycle configuration |
-| `CKV2_AWS_62` | No event notifications configured |
+- HTML
+- CSS
+- JavaScript
 
-## Phase 4 – Container Security
+---
 
-Extends the compliance pipeline to container images: a minimal demo service is built into a hardened Docker image, and every push triggers an automated Trivy vulnerability scan alongside the existing Checkov scan.
+# ✨ Features
 
-- **`services/demo-app/`** — a minimal Node.js/Express service (`server.js`, `package.json`, `package-lock.json`) with `/` and `/health` endpoints. It exists purely as a realistic build/scan target for the container pipeline.
-- **`services/demo-app/Dockerfile`** — a multi-stage, production-style build: a `deps` stage runs `npm ci --omit=dev`, and the `runtime` stage copies only the built `node_modules` and app code onto `node:20-alpine`, strips the bundled `npm`/`npx`/`corepack` tooling (unneeded at runtime and a source of extra CVEs), runs as the image's non-root `node` user, and defines a `HEALTHCHECK` against `/health`.
-- **`services/demo-app/.dockerignore`** — excludes `node_modules`, VCS metadata, env files, and docs from the build context.
-- **`.github/workflows/trivy.yml`** — a new, separate GitHub Actions workflow (the existing `checkov.yml` is untouched) that triggers on every `push`, builds the demo app image, and scans it with Trivy. It fails the job only on `HIGH`/`CRITICAL` findings (`severity: HIGH,CRITICAL`, `exit-code: 1`) — `LOW`/`MEDIUM` findings are reported but non-blocking.
+- Infrastructure as Code using Terraform
+- Cloud-native architecture
+- Containerized application
+- GitHub Actions CI/CD
+- Infrastructure Security Scanning
+- Secret Detection
+- Container Vulnerability Scanning
+- Amazon ECR integration
+- Amazon EKS deployment
+- Kubernetes orchestration
+- AWS Load Balancer
+- Enterprise-inspired DevSecOps workflow
 
-This phase intentionally excludes GitLeaks, Lambda, DynamoDB, CloudWatch, and Kubernetes — those remain for later phases per the roadmap above.
+---
 
-### Trivy scan result (local verification)
+# 📂 Project Structure
 
-Built and scanned locally with Docker 29.2.1 and Trivy (`aquasec/trivy:latest`) before pushing, using the same `--severity HIGH,CRITICAL` gate the CI workflow enforces:
-
-- Stripping `npm`/`npx`/`corepack` from the runtime image eliminated 12 `HIGH` findings that were coming from npm's own bundled transitive dependencies (`cross-spawn`, `glob`, `minimatch`, `node-tar`, etc.) — none of which the application actually uses at runtime.
-- **2 `HIGH` findings remain**: `CVE-2026-45447` in the base image's `libssl3`/`libcrypto3` (OpenSSL heap use-after-free in `PKCS7_verify()`). A fixed package version (`3.5.7-r0`) exists upstream, but the current `node:20-alpine` base image tag hasn't been rebuilt with it yet — this is a real, current CVE in the base OS layer, not something introduced by this project's code. Expect the first CI run of this workflow to fail on this exact finding until Alpine/Docker Hub publish an updated `node:20-alpine` layer; re-running the workflow later (or a routine base-image bump) will pick up the fix automatically.
-
-## Repository Structure
-
-```
-SkyShield/
+```text
+SkyShield
+│
 ├── .github/
 │   └── workflows/
-│       ├── checkov.yml        # Checkov IaC security scan (push / PR)
-│       └── trivy.yml          # Trivy container vulnerability scan (push)
-├── docs/
-│   ├── architecture/          # Architecture diagrams and design records
-│   └── screenshots/           # Dashboard and tooling screenshots
+│
 ├── infra/
-│   └── terraform/             # Terraform root module + Checkov scan target
-├── services/
-│   └── demo-app/              # Minimal Node.js service + Dockerfile (Trivy scan target)
-├── README.md
-├── LICENSE
-├── CONTRIBUTING.md
-├── CODE_OF_CONDUCT.md
-├── SECURITY.md
-├── CHANGELOG.md
-└── .gitignore
+│   └── terraform/
+│
+├── k8s/
+│
+├── website/
+│
+├── screenshots/
+│   ├── homepage-eks.png
+│   ├── github-actions.png
+│   └── eks-cluster.png
+│
+└── README.md
 ```
 
-Additional top-level directories (`dashboard/`, issue templates, etc.) will be introduced in later phases, as their corresponding code is added — not created empty in advance.
+---
 
-## Future Scope
+# 📚 Skills Demonstrated
 
-- Multi-cloud support beyond AWS (Azure, GCP).
-- Policy-as-code customization for organization-specific compliance frameworks.
-- Historical compliance trend analysis and predictive risk scoring.
-- Role-based access control for the compliance dashboard.
-- Integration with ticketing systems (e.g., Jira) for automated remediation tracking.
+- AWS Cloud
+- Docker
+- Kubernetes
+- Amazon EKS
+- Amazon ECR
+- Terraform
+- GitHub Actions
+- Infrastructure as Code
+- DevSecOps
+- CI/CD
+- Security Automation
+- Cloud Deployment
 
-## License
+---
 
-SkyShield is licensed under the [Apache License 2.0](LICENSE).
+# 🚀 Future Enhancements
 
-## Contributing
+- ArgoCD GitOps Deployment
+- Helm Charts
+- Prometheus Monitoring
+- Grafana Dashboards
+- AWS Secrets Manager
+- Horizontal Pod Autoscaler
+- Blue/Green Deployments
+- Canary Deployments
+- Terraform Remote State
+- Multi-Environment Deployment
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting a pull request.
+---
+
+# 📸 Deployment Proof
+
+✔ Successfully deployed on Amazon EKS
+
+✔ Publicly accessible through AWS Elastic Load Balancer
+
+✔ Docker images stored in Amazon ECR
+
+✔ GitHub Actions CI pipeline implemented
+
+✔ Infrastructure managed using Terraform
+
+✔ Security integrated with Checkov, Trivy and GitLeaks
+
+---
+
+# 👩‍💻 Author
+
+**Priyanshi Saugat**
+
+Cloud | AWS | DevOps | Kubernetes | Terraform | Docker | DevSecOps
+
+---
+
+## ⭐ Support
+
+If you found this project interesting, consider giving it a ⭐ on GitHub.
