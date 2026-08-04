@@ -53,7 +53,7 @@ The application is deployed on Amazon EKS and exposed through an AWS Elastic Loa
 
 ## Homepage
 
-![Homepage](screenshots/homepage-eks.png)
+![Homepage](screenshots/skyshield%20EKS.png)
 
 ---
 
@@ -72,7 +72,7 @@ SkyShield uses GitHub Actions to automate security validation and container depl
 
 ## GitHub Actions
 
-![GitHub Actions](screenshots/github-actions.png)
+![GitHub Actions](screenshots/pipeline.png)
 
 ---
 
@@ -82,10 +82,7 @@ The application is deployed as Kubernetes Pods inside an Amazon EKS cluster.
 
 ## Amazon EKS Cluster
 
-![Amazon EKS](screenshots/eks-cluster.png)
-
----
-
+![Amazon EKS](screenshots/EKS%20cluster.png)
 # 🏗️ Architecture
 
 ```text
