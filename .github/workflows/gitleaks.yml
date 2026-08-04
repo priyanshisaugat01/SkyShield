@@ -1,0 +1,19 @@
+name: GitLeaks Secret Scan
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  gitleaks:
+    name: Scan Repository for Secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
