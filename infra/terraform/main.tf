@@ -1,21 +1,48 @@
 # -----------------------------------------------------------------------------
-# COMPLIANCE DEMO BUCKET.
-#
-# Phase 2 deliberately created this S3 bucket with public access enabled so
-# Checkov (see .github/workflows/checkov.yml) had a real finding to catch.
-# Phase 3 remediates every one of those findings below, following AWS S3
-# security best practices. This bucket is now the reference example of how
-# storage should be configured across this project.
+# SKYSHIELD S3 STORAGE
 # -----------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "demo" {
   bucket = var.demo_bucket_name
+
+  tags = {
+    Name = var.demo_bucket_name
+  }
 }
 
-# SECURITY: Object Ownership set to "BucketOwnerEnforced" disables ACLs
-# entirely — access is controlled only through IAM/bucket policy, which is
-# the AWS-recommended posture and removes the ACL-based public-access vector
-# that Phase 2 relied on (fixes CKV_AWS_20 / public-read ACL).
+# -----------------------------------------------------------------------------
+# Logging Bucket
+# -----------------------------------------------------------------------------
+
+resource "aws_s3_bucket" "logs" {
+  bucket = "${var.demo_bucket_name}-logs"
+
+  tags = {
+    Name = "${var.demo_bucket_name}-logs"
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_ownership_controls" "logs" {
+  bucket = aws_s3_bucket.logs.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Ownership Controls
+# -----------------------------------------------------------------------------
+
 resource "aws_s3_bucket_ownership_controls" "demo" {
   bucket = aws_s3_bucket.demo.id
 
@@ -24,10 +51,10 @@ resource "aws_s3_bucket_ownership_controls" "demo" {
   }
 }
 
-# SECURITY: Block Public Access is fully enabled on all four settings,
-# guaranteeing the bucket cannot be made public via ACL or bucket policy,
-# even by accident (fixes CKV_AWS_53 / CKV_AWS_54 / CKV_AWS_55 / CKV_AWS_56
-# and CKV2_AWS_6).
+# -----------------------------------------------------------------------------
+# Block Public Access
+# -----------------------------------------------------------------------------
+
 resource "aws_s3_bucket_public_access_block" "demo" {
   bucket = aws_s3_bucket.demo.id
 
@@ -37,9 +64,10 @@ resource "aws_s3_bucket_public_access_block" "demo" {
   restrict_public_buckets = true
 }
 
-# SECURITY: Versioning is enabled so every object revision is retained,
-# protecting against accidental overwrite/deletion and supporting recovery
-# (fixes CKV_AWS_21).
+# -----------------------------------------------------------------------------
+# Versioning
+# -----------------------------------------------------------------------------
+
 resource "aws_s3_bucket_versioning" "demo" {
   bucket = aws_s3_bucket.demo.id
 
@@ -48,17 +76,60 @@ resource "aws_s3_bucket_versioning" "demo" {
   }
 }
 
-# SECURITY: Server-side encryption is enforced by default using AES256, so
-# every object is encrypted at rest even if a caller never requests it
-# explicitly (fixes CKV_AWS_19 / bucket encryption not enabled). Swap
-# sse_algorithm to "aws:kms" with a customer-managed key ID here if the
-# compliance requirement calls for KMS-managed keys instead of SSE-S3.
+# -----------------------------------------------------------------------------
+# KMS Key
+# -----------------------------------------------------------------------------
+
+resource "aws_kms_key" "s3" {
+  description             = "SkyShield S3 Encryption Key"
+  deletion_window_in_days = 7
+
+  tags = {
+    Name = "skyshield-s3-key"
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Encryption
+# -----------------------------------------------------------------------------
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "demo" {
   bucket = aws_s3_bucket.demo.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      kms_master_key_id = aws_kms_key.s3.arn
+      sse_algorithm     = "aws:kms"
     }
   }
+}
+
+# -----------------------------------------------------------------------------
+# Lifecycle Rule
+# -----------------------------------------------------------------------------
+
+resource "aws_s3_bucket_lifecycle_configuration" "demo" {
+  bucket = aws_s3_bucket.demo.id
+
+  rule {
+    id     = "cleanup"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 365
+    }
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Access Logging
+# -----------------------------------------------------------------------------
+
+resource "aws_s3_bucket_logging" "demo" {
+  bucket = aws_s3_bucket.demo.id
+
+  target_bucket = aws_s3_bucket.logs.id
+  target_prefix = "access-logs/"
 }
