@@ -12,7 +12,10 @@
 ---
 
 # 📖 Project Overview
+![Uploading skyshield diagram.png…]()
 
+
+  
 SkyShield is an enterprise-inspired DevSecOps platform built for aviation cloud infrastructure. It demonstrates how modern cloud applications can be secured, containerized, continuously validated, and deployed using AWS cloud services and Kubernetes.
 
 The project integrates Infrastructure as Code (Terraform), container security scanning, secret detection, CI/CD automation, Docker, Amazon ECR, and Amazon EKS into one complete cloud-native deployment pipeline.
