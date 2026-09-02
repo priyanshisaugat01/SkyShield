@@ -42,7 +42,7 @@ crash.log
 crash.*.log
 .terraformrc
 terraform.rc
-.terraform.lock.hcl
+
 
 # Terraform plan files
 *.tfplan
