@@ -1,0 +1,85 @@
+name: SkyShield Security Summary
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  security-summary:
+    name: Generate Security Summary
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # -------------------------
+      # Checkov
+      # -------------------------
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov
+        continue-on-error: true
+        run: |
+          checkov \
+            -d infra/terraform \
+            --framework terraform \
+            --output json > checkov-results.json
+
+      # -------------------------
+      # GitLeaks
+      # -------------------------
+      - name: Run GitLeaks
+        continue-on-error: true
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/repo" \
+            ghcr.io/gitleaks/gitleaks:latest \
+            detect \
+            --source=/repo \
+            --report-format=json \
+            --report-path=/repo/gitleaks-results.json \
+            --redact
+
+      # -------------------------
+      # Trivy
+      # -------------------------
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t skyshield-website:${{ github.sha }} \
+            ./website
+
+      - name: Run Trivy
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: skyshield-website:${{ github.sha }}
+          format: json
+          output: trivy-results.json
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+      # -------------------------
+      # Generate combined summary
+      # -------------------------
+      - name: Generate security summary
+        run: |
+          python scripts/build_security_summary.py
+
+      # -------------------------
+      # Upload summary
+      # -------------------------
+      - name: Upload security summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-summary
+          path: security-summary.json
