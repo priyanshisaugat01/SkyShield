@@ -21,5 +21,22 @@ jobs:
       - name: Install Checkov
         run: pip install checkov
 
-      - name: Run Checkov against Terraform
-        run: checkov -d infra/terraform --compact --quiet --framework terraform
+      - name: Run Checkov and generate JSON report
+        id: checkov
+        continue-on-error: true
+        run: |
+          checkov \
+            -d infra/terraform \
+            --framework terraform \
+            --output json > checkov-results.json
+
+      - name: Upload Checkov report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkov-results
+          path: checkov-results.json
+
+      - name: Fail workflow if Checkov found issues
+        if: steps.checkov.outcome == 'failure'
+        run: exit 1
