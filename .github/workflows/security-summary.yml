@@ -1,4 +1,4 @@
-name: SkyShield Security Summary
+name: SkyShield Security Pipeline
 
 on:
   push:
@@ -6,26 +6,35 @@ on:
   pull_request:
 
 jobs:
-  security-summary:
-    name: Generate Security Summary
+  security:
+    name: Security Gates
     runs-on: ubuntu-latest
 
     steps:
+      # -------------------------
+      # Checkout
+      # -------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      # -------------------------
+      # Python
+      # -------------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       # -------------------------
-      # Checkov
+      # Checkov - IaC Security
       # -------------------------
       - name: Install Checkov
         run: pip install checkov
 
       - name: Run Checkov
+        id: checkov
         continue-on-error: true
         run: |
           checkov \
@@ -34,9 +43,10 @@ jobs:
             --output json > checkov-results.json
 
       # -------------------------
-      # GitLeaks
+      # GitLeaks - Secret Detection
       # -------------------------
       - name: Run GitLeaks
+        id: gitleaks
         continue-on-error: true
         run: |
           docker run --rm \
@@ -49,15 +59,19 @@ jobs:
             --redact
 
       # -------------------------
-      # Trivy
+      # Docker Build
       # -------------------------
-      - name: Build Docker image
+      - name: Build SkyShield Docker image
         run: |
           docker build \
             -t skyshield-website:${{ github.sha }} \
             ./website
 
+      # -------------------------
+      # Trivy - Container Security
+      # -------------------------
       - name: Run Trivy
+        id: trivy
         continue-on-error: true
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
@@ -68,14 +82,14 @@ jobs:
           exit-code: "1"
 
       # -------------------------
-      # Generate combined summary
+      # Generate Security Summary
       # -------------------------
       - name: Generate security summary
         run: |
           python scripts/build_security_summary.py
 
       # -------------------------
-      # Upload summary
+      # Upload Security Summary
       # -------------------------
       - name: Upload security summary
         if: always()
@@ -83,3 +97,39 @@ jobs:
         with:
           name: security-summary
           path: security-summary.json
+
+      # -------------------------
+      # Upload Individual Reports
+      # -------------------------
+      - name: Upload Checkov report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkov-results
+          path: checkov-results.json
+
+      - name: Upload GitLeaks report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-results
+          path: gitleaks-results.json
+
+      - name: Upload Trivy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: trivy-results.json
+
+      # -------------------------
+      # Security Gate
+      # -------------------------
+      - name: Fail pipeline if security checks failed
+        if: |
+          steps.checkov.outcome == 'failure' ||
+          steps.gitleaks.outcome == 'failure' ||
+          steps.trivy.outcome == 'failure'
+        run: |
+          echo "One or more security checks reported findings."
+          exit 1
